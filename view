@@ -1,0 +1,195 @@
+import sys
+
+fileTrain = open(sys.argv[1], "r")
+fileTest = open(sys.argv[2], "r")
+output = open("output.txt", "x")
+Spam = []
+NotSpam = []
+Train = []
+Test = []
+
+SpamXprobs1 = []
+SpamXprobs0 = []
+
+NotSpamXprobs1 = []
+NotSpamXprobs0 = []
+
+TotalXiProb1 = []
+TotalXiProb0 = []
+
+SpamYes = []
+SpamNo = []
+
+NaiveBayceNotSpam = []
+NaiveBayceSpam = []
+
+ClassifierSpam = []
+ClassifierNSpam = []
+
+IsSpam = []
+
+
+def FindProbXi(Data, col, spam): #Finds prob of each element in each column being a 1 or a 0
+    one = 0
+
+    for r in range(len(Data)):
+        if int(Data[r][col]) == 1:
+            one = one + 1
+
+    if spam == 0:
+        oneprob = (float(one / len(Data)))
+        SpamXprobs1.append(oneprob)
+        SpamXprobs0.append(1 - oneprob)
+    elif spam == 1:
+        oneprob = (float(one / len(Data)))
+        NotSpamXprobs1.append(oneprob)
+        NotSpamXprobs0.append(1 - oneprob)
+
+    else:
+        oneprob = (float(one / len(Data)))
+        TotalXiProb1.append(oneprob)
+        TotalXiProb0.append(1 - oneprob)
+
+
+def Pi(Data):
+    pi_1 = 1
+
+    for r in range(len(Data)):
+        pi_1 = pi_1 * float(Data[r])
+    return pi_1
+
+
+def NaiveBayes():
+    for x in range(len(Test)):
+
+        Probs = []
+        for y in range(len(Test[x])):
+
+            if int(Test[x][y]) == 0:
+
+                Bayes = SpamXprobs0[y]
+                Probs.append(Bayes)
+            else:
+
+                Bayes = SpamXprobs1[y]
+                Probs.append(Bayes)
+        SpamYes.append(Probs)
+
+    for x in range(len(Test)):
+        Bayes = 1
+        Probs = []
+        for y in range(len(Test[x])):
+            if int(Test[x][y]) == 0:
+
+                Bayes = NotSpamXprobs0[y]
+                Probs.append(Bayes)
+            else:
+
+                Bayes = NotSpamXprobs1[y]
+                Probs.append(Bayes)
+        SpamNo.append(Probs)
+
+    for x in range(len(SpamNo)):
+        num = Pi(SpamNo[x])
+        NotSpamBayes = num * NSpamProb
+        NaiveBayceNotSpam.append(NotSpamBayes)
+    for x in range(len(SpamYes)):
+        num = Pi(SpamYes[x])
+        SpamBayes = num * SpamProb
+        NaiveBayceSpam.append(SpamBayes)
+
+
+Strings = fileTrain.readlines()
+for o in Strings:
+    # Read data from file and load it ito 2 arrays
+
+    line = o.split('     ')
+    line.remove('')
+    number = int(line[12])
+    if number == 0:
+        NotSpam.append(line)
+
+    else:
+        Spam.append(line)
+
+StringsTest = fileTest.readlines()
+for o in StringsTest:
+    # Read data from file and load it ito 2 arrays
+
+    line = o.split('     ')
+    line.remove('')
+    Test.append(line)
+
+SpamProb = len(Spam) / len(NotSpam)  # Get the prob probabilty that the email is going to be spam
+NSpamProb = 1 - SpamProb  # Get the prob that the email is not going to be spam
+count = 0  # Uses a count to iderate through the attributes of each email
+Length = len(Spam[1])-1
+
+# finds the probabilty of each attribute for both the spam and not spam emails
+
+while count <Length:
+    FindProbXi(Spam, count, 0)
+    count = count + 1
+
+count2 = 0
+while count2 < Length:
+    FindProbXi(NotSpam, count2, 1)
+    count2 = count2 + 1
+
+Total = Spam + NotSpam
+count3 = 0
+while count3 < 12:
+    FindProbXi(Total, count3, 2)
+    count3 = count3 + 1
+
+NaiveBayes()
+
+for x in range(len(NaiveBayceNotSpam)):
+    number1 = NaiveBayceNotSpam[x] / (NaiveBayceNotSpam[x] + NaiveBayceSpam[x])
+    ClassifierNSpam.append(number1)
+
+for x in range(len(NaiveBayceSpam)):
+    one = NaiveBayceSpam[x]
+    two = NaiveBayceNotSpam[x]
+    number1 = one / (one + two)
+
+    ClassifierSpam.append(number1)
+
+for x in range(len(ClassifierNSpam)):
+    if ClassifierNSpam[x] < ClassifierSpam[x]:
+        IsSpam.append(1)
+
+    else:
+        IsSpam.append(0)
+
+for x in range(len(IsSpam)):
+    if int(IsSpam[x]) == 0:
+        print("Email", x, " is not Spam as it has a ", "%.2f" % (ClassifierNSpam[x] * 100),
+         "% probability of being Not Spam, and a ", "%.2f" % (ClassifierSpam[x] * 100), "% of being a Spam email")
+        word = ("Email", x, " is not Spam as it has a ", "%.2f" % (ClassifierNSpam[x] * 100),
+              "% probability of being Not Spam, and a ", "%.2f" % (ClassifierSpam[x] * 100), "% of being a Spam email")
+        output.write(str(word))
+        output.write("\n")
+
+    if int(IsSpam[x]) == 1:
+         print("Email", x, "is Spam as it has a ", "%.2f" % (ClassifierNSpam[x] * 100),
+              "% probability of being Not Spam, and a ", "%.2f" % (ClassifierSpam[x] * 100), "% of being a Spam email")
+         word = ("Email", x, "is Spam as it has a ", "%.2f" % (ClassifierNSpam[x] * 100),
+              "% probability of being Not Spam, and a ", "%.2f" % (ClassifierSpam[x] * 100), "% of being a Spam email")
+
+         output.write(str(word))
+         output.write("\n")
+
+print("")
+print("Prob that Xi will equal 0 in the spam dataset")
+print(SpamXprobs0)
+print("")
+print("Prob that Xi will equal 1 in the spam dataset")
+print(SpamXprobs1)
+print("")
+print("Prob that Xi will equal 0 in the Notspam dataset")
+print(NotSpamXprobs0)
+print("")
+print("Prob that Xi will equal 1 in the Notspam dataset")
+print(NotSpamXprobs1)
+print("")
